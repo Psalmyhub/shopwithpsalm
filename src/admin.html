@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .admin-wrap{max-width:760px;margin:0 auto;padding:40px 24px 100px;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px;}
+  .panel h2{font-family:'Archivo Black',sans-serif;font-size:18px;margin:0 0 18px;}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px;}
+  input[type=text],input[type=password],input[type=number],textarea,select{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;
+  }
+  textarea{min-height:80px;resize:vertical;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .img-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .img-list img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);}
+  .img-item{position:relative;}
+  .img-item button{
+    position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;
+    border:none;border-radius:999px;width:20px;height:20px;font-size:11px;cursor:pointer;
+  }
+  .btn{
+    background:var(--black);color:var(--white);border:none;border-radius:8px;
+    padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:16px;
+  }
+  .btn.orange{background:var(--orange);}
+  .btn.red{background:var(--red);}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .product-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--border);
+  }
+  .product-row:last-child{border-bottom:none;}
+  .product-row .pname{font-weight:600;}
+  .product-row .pcat{font-size:12px;color:var(--text-dim);}
+  .actions{display:flex;gap:8px;}
+  .actions button{
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;
+  }
+  #loginScreen{max-width:340px;margin:100px auto;padding:0 24px;text-align:center;}
+  #publishBox{
+    background:var(--bg);border:1px dashed var(--border);border-radius:10px;
+    padding:14px;font-size:12px;font-family:monospace;white-space:pre-wrap;
+    word-break:break-all;max-height:180px;overflow-y:auto;margin-top:10px;
+  }
+  .hint{font-size:12.5px;color:var(--text-dim);margin-top:6px;}
+  #statusBanner{
+    padding:12px 16px;border-radius:10px;font-size:13.5px;font-weight:600;
+    margin-bottom:20px;
+  }
+  #statusBanner.success{background:#E8F5E9;color:#1B5E20;}
+  #statusBanner.error{background:#FDECEA;color:#B71C1C;}
+  [data-theme="dark"] #statusBanner.success{background:#173620;color:#8FDBA0;}
+  [data-theme="dark"] #statusBanner.error{background:#3A1A18;color:#F5A6A0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-name">Admin</span>
+    </a>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<div id="loginScreen">
+  <h2 style="font-family:'Archivo Black',sans-serif;">Admin Login</h2>
+  <input type="password" id="pwInput" placeholder="Enter admin password">
+  <button class="btn orange" style="width:100%" onclick="tryLogin()">Enter</button>
+  <p class="hint">Default password is <b>admin123</b> — change it below in the code (search for ADMIN_PASSWORD) before sharing this site.</p>
+</div>
+
+<div class="admin-wrap" id="adminArea" style="display:none">
+
+  <div id="statusBanner" style="display:none;"></div>
+
+  <div class="panel">
+    <h2>Store Branding</h2>
+    <label>Logo</label>
+    <input type="file" id="logoFile" accept="image/*" onchange="handleLogoUpload(event)">
+    <div class="img-list" id="logoPreview"></div>
+    <label>Store name</label>
+    <input type="text" id="storeName" placeholder="e.g. Bella's Accessories">
+    <label>Headline (shown big on homepage)</label>
+    <input type="text" id="storeTagline" placeholder="e.g. Handmade accessories, made to be noticed.">
+    <label>About This Project</label>
+    <textarea id="aboutProject" placeholder="What this website/project is about"></textarea>
+    <label>About The Owner</label>
+    <textarea id="aboutOwner" placeholder="A little about you, the owner"></textarea>
+    <button class="btn" onclick="saveSettings()">Save branding</button>
+  </div>
+
+  <div class="panel">
+    <h2>Add / Edit Product</h2>
+    <input type="hidden" id="editId">
+    <label>Product name</label>
+    <input type="text" id="pName">
+    <label>Category</label>
+    <select id="pCategory">
+      <option>Aesthetic Light</option>
+      <option>Wrist Watch</option>
+      <option>Wall Decor</option>
+      <option>Bags</option>
+      <option>Content Kits</option>
+      <option>Gaming Accessories</option>
+      <option>Home Decor</option>
+      <option>Others</option>
+    </select>
+    <label>Price (₦)</label>
+    <input type="number" id="pPrice" placeholder="e.g. 15000">
+    <label>Product Features</label>
+    <textarea id="pFeatures" placeholder="What makes this product stand out"></textarea>
+    <label>Product Use</label>
+    <textarea id="pUsage" placeholder="How to use it / what it's for"></textarea>
+    <label>Product photos (choose one or more)</label>
+    <input type="file" id="pImages" accept="image/*" multiple onchange="handleProductImages(event)">
+    <div class="img-list" id="pImagePreview"></div>
+    <label>Product video link</label>
+    <input type="text" id="pVideo" placeholder="YouTube / TikTok / Instagram video URL">
+    <label>Facebook link</label>
+    <input type="text" id="pFacebook" placeholder="https://facebook.com/...">
+    <label>Instagram link</label>
+    <input type="text" id="pInstagram" placeholder="https://instagram.com/...">
+    <label>TikTok link</label>
+    <input type="text" id="pTiktok" placeholder="https://tiktok.com/...">
+    <label>Dimensions (cm)</label>
+    <div class="row3">
+      <input type="number" id="pLength" placeholder="Length">
+      <input type="number" id="pBreadth" placeholder="Breadth">
+      <input type="number" id="pHeight" placeholder="Height">
+    </div>
+    <button class="btn orange" id="saveProductBtn" onclick="saveProduct()">Save product</button>
+    <button class="btn ghost" onclick="resetForm()">Clear form</button>
+  </div>
+
+  <div class="panel">
+    <h2>Your Products</h2>
+    <p class="hint">Every save above goes live immediately for all visitors — no extra publish step needed.</p>
+    <div id="productList"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const ADMIN_PASSWORD = "admin123";
+let currentImages = [];
+let logoData = "";
+let LIVE_PRODUCTS = [];
+let LIVE_SETTINGS = {};
+
+function showStatus(message, isError){
+  const el = document.getElementById("statusBanner");
+  el.textContent = message;
+  el.className = isError ? "error" : "success";
+  el.style.display = "block";
+  window.scrollTo({top:0, behavior:"smooth"});
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(()=>{ el.style.display = "none"; }, 4000);
+}
+
+function tryLogin(){
+  const val = document.getElementById("pwInput").value;
+  if(val === ADMIN_PASSWORD){
+    localStorage.setItem("adminSecret", ADMIN_PASSWORD);
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("adminArea").style.display = "block";
+    loadAll();
+  } else {
+    document.getElementById("pwInput").value = "";
+    document.getElementById("pwInput").placeholder = "Wrong password, try again";
+  }
+}
+
+async function loadAll(){
+  initTheme();
+  const store = await loadStore();
+  LIVE_SETTINGS = store.settings || {};
+  LIVE_PRODUCTS = store.products || [];
+
+  document.getElementById("storeName").value = LIVE_SETTINGS.name || "";
+  document.getElementById("storeTagline").value = LIVE_SETTINGS.tagline || "";
+  document.getElementById("aboutProject").value = LIVE_SETTINGS.aboutProject || "";
+  document.getElementById("aboutOwner").value = LIVE_SETTINGS.aboutOwner || "";
+  if(LIVE_SETTINGS.logo){
+    logoData = LIVE_SETTINGS.logo;
+    document.getElementById("logoPreview").innerHTML = `<img src="${logoData}">`;
+  }
+  renderProductList();
+}
+
+// Resize + compress images before storing, so a handful of photos never
+// blow past the request size limit (uploads were failing silently at ~4.5MB).
+function resizeImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > maxDim || height > maxDim){
+          if(width > height){
+            height = Math.round(height * (maxDim / width));
+            width = maxDim;
+          } else {
+            width = Math.round(width * (maxDim / height));
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function handleLogoUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  resizeImage(file, 400, 0.85).then(dataUrl=>{
+    logoData = dataUrl;
+    document.getElementById("logoPreview").innerHTML = `<img src="${logoData}">`;
+  });
+}
+
+async function saveSettings(){
+  LIVE_SETTINGS = {
+    name: document.getElementById("storeName").value,
+    tagline: document.getElementById("storeTagline").value,
+    aboutProject: document.getElementById("aboutProject").value,
+    aboutOwner: document.getElementById("aboutOwner").value,
+    logo: logoData
+  };
+  const ok = await saveSettingsRemote(LIVE_SETTINGS);
+  showStatus(ok ? "Branding published — live for everyone now." : "Something went wrong publishing. Try again.", !ok);
+}
+
+function handleProductImages(e){
+  const files = Array.from(e.target.files);
+  files.forEach(file=>{
+    resizeImage(file, 1000, 0.8).then(dataUrl=>{
+      currentImages.push(dataUrl);
+      renderImagePreview();
+    });
+  });
+}
+function renderImagePreview(){
+  document.getElementById("pImagePreview").innerHTML = currentImages.map((img,i)=>
+    `<div class="img-item"><img src="${img}"><button onclick="removeImage(${i})">✕</button></div>`
+  ).join("");
+}
+function removeImage(i){ currentImages.splice(i,1); renderImagePreview(); }
+
+async function saveProduct(){
+  const name = document.getElementById("pName").value.trim();
+  if(!name){ showStatus("Enter a product name", true); return; }
+  if(currentImages.length === 0){ showStatus("Add at least one photo", true); return; }
+
+  const editId = document.getElementById("editId").value;
+  const product = {
+    id: editId || ("p" + Date.now()),
+    name,
+    category: document.getElementById("pCategory").value,
+    price: document.getElementById("pPrice").value,
+    features: document.getElementById("pFeatures").value.trim(),
+    usage: document.getElementById("pUsage").value.trim(),
+    images: currentImages,
+    video: document.getElementById("pVideo").value.trim(),
+    facebook: document.getElementById("pFacebook").value.trim(),
+    instagram: document.getElementById("pInstagram").value.trim(),
+    tiktok: document.getElementById("pTiktok").value.trim(),
+    length: document.getElementById("pLength").value,
+    breadth: document.getElementById("pBreadth").value,
+    height: document.getElementById("pHeight").value
+  };
+
+  if(editId){
+    LIVE_PRODUCTS = LIVE_PRODUCTS.map(p=>p.id===editId?product:p);
+  } else {
+    LIVE_PRODUCTS.push(product);
+  }
+  const saveBtn = document.getElementById("saveProductBtn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+  const ok = await upsertProductRemote(product);
+  saveBtn.disabled = false;
+  saveBtn.textContent = "Save product";
+  resetForm();
+  renderProductList();
+  showStatus(ok ? "Product published — live for everyone now." : "Something went wrong publishing. Try again.", !ok);
+}
+
+function resetForm(){
+  document.getElementById("editId").value = "";
+  document.getElementById("pName").value = "";
+  document.getElementById("pPrice").value = "";
+  document.getElementById("pFeatures").value = "";
+  document.getElementById("pUsage").value = "";
+  document.getElementById("pVideo").value = "";
+  document.getElementById("pFacebook").value = "";
+  document.getElementById("pInstagram").value = "";
+  document.getElementById("pTiktok").value = "";
+  document.getElementById("pLength").value = "";
+  document.getElementById("pBreadth").value = "";
+  document.getElementById("pHeight").value = "";
+  currentImages = [];
+  renderImagePreview();
+}
+
+function editProduct(id){
+  const p = LIVE_PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById("editId").value = p.id;
+  document.getElementById("pName").value = p.name;
+  document.getElementById("pCategory").value = p.category;
+  document.getElementById("pPrice").value = p.price;
+  document.getElementById("pFeatures").value = p.features;
+  document.getElementById("pUsage").value = p.usage;
+  document.getElementById("pVideo").value = p.video;
+  document.getElementById("pFacebook").value = p.facebook;
+  document.getElementById("pInstagram").value = p.instagram;
+  document.getElementById("pTiktok").value = p.tiktok;
+  document.getElementById("pLength").value = p.length;
+  document.getElementById("pBreadth").value = p.breadth;
+  document.getElementById("pHeight").value = p.height;
+  currentImages = [...p.images];
+  renderImagePreview();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+let pendingDeleteId = null;
+async function deleteProduct(id){
+  if(pendingDeleteId !== id){
+    pendingDeleteId = id;
+    renderProductList();
+    return;
+  }
+  pendingDeleteId = null;
+  LIVE_PRODUCTS = LIVE_PRODUCTS.filter(p=>p.id!==id);
+  await deleteProductRemote(id);
+  renderProductList();
+  showStatus("Product deleted.", false);
+}
+
+function renderProductList(){
+  const list = LIVE_PRODUCTS;
+  const el = document.getElementById("productList");
+  if(list.length===0){ el.innerHTML = `<p class="hint">No products yet.</p>`; return; }
+  el.innerHTML = list.map(p=>`
+    <div class="product-row">
+      <div>
+        <div class="pname">${p.name}</div>
+        <div class="pcat">${p.category} · ${formatPrice(p.price)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="editProduct('${p.id}')">Edit</button>
+        <button onclick="deleteProduct('${p.id}')">${pendingDeleteId===p.id ? "Click again to confirm" : "Delete"}</button>
+      </div>
+    </div>
+  `).join("");
+}
+</script>
+</body>
+</html>

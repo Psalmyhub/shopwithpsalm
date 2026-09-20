@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html" id="brandLink">
+      <img class="brand-logo" id="brandLogo" src="" alt="">
+      <span class="brand-name" id="brandName">Your Store</span>
+    </a>
+    <div class="header-actions">
+      <button class="theme-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Menu">☰</button>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="headline-full">
+  <h1 id="brandTagline">Add your <span class="accent">store description</span> from the Admin page.</h1>
+</div>
+
+<div class="wrap">
+  <div class="jumbotron" id="jumbotron"></div>
+
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search products by name..." oninput="onSearchInput(event)">
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span id="footerName">Your Store</span> · Orders are sent via WhatsApp
+  </div>
+</footer>
+
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeMenuOnBackdrop(event)">
+  <div class="drawer">
+    <button class="close-btn" onclick="toggleMenu()">✕</button>
+    <div class="drawer-section">
+      <h3>About This Project</h3>
+      <p id="aboutProjectText">Nothing added yet.</p>
+    </div>
+    <div class="drawer-section">
+      <h3>About The Owner</h3>
+      <p id="aboutOwnerText">Nothing added yet.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOnBackdrop(event)">
+  <div class="modal-wrap">
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <div class="modal">
+      <div class="modal-top">
+        <div class="modal-gallery">
+          <img class="modal-main-img" id="modalMainImg" src="" alt="">
+          <div class="thumb-row" id="thumbRow"></div>
+        </div>
+        <div class="modal-info">
+          <div class="modal-cat" id="modalCat"></div>
+          <h2 class="modal-name" id="modalName"></h2>
+          <div class="modal-price" id="modalPrice"></div>
+          <div class="modal-desc" id="modalDesc"></div>
+          <div class="dims-row" id="dimsRow"></div>
+          <p class="social-note" id="socialNote" style="display:none;">See product video on our social media platforms</p>
+          <div class="social-row" id="socialRow"></div>
+          <a class="order-btn" id="orderBtn" href="#" target="_blank">Order on WhatsApp</a>
+          <button class="social-link" id="copyLinkBtn" style="margin-top:10px;width:100%;justify-content:center;">🔗 Copy link to this item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let ALL_PRODUCTS = [];
+let ACTIVE_CATEGORY = "All";
+let SEARCH_QUERY = "";
+const CATEGORIES = ["All","Aesthetic Light","Wrist Watch","Wall Decor","Bags","Content Kits","Gaming Accessories","Home Decor","Others"];
+
+function onSearchInput(e){
+  SEARCH_QUERY = e.target.value.trim().toLowerCase();
+  renderGrid();
+}
+
+async function init(){
+  initTheme();
+
+  const store = await loadStore();
+  const settings = store.settings || {};
+  if(settings.logo){ document.getElementById("brandLogo").src = settings.logo; }
+  if(settings.name){
+    document.getElementById("brandName").textContent = settings.name;
+    document.getElementById("footerName").textContent = settings.name;
+    document.title = settings.name;
+  }
+  if(settings.tagline){ document.getElementById("brandTagline").innerHTML = settings.tagline; }
+  if(settings.aboutProject){ document.getElementById("aboutProjectText").textContent = settings.aboutProject; }
+  if(settings.aboutOwner){ document.getElementById("aboutOwnerText").textContent = settings.aboutOwner; }
+
+  ALL_PRODUCTS = store.products || [];
+
+  renderJumbotron();
+  renderTabs();
+  renderGrid();
+
+  const params = new URLSearchParams(window.location.search);
+  const productId = params.get("p");
+  if(productId){
+    const p = ALL_PRODUCTS.find(x=>x.id===productId);
+    if(p) openModal(p);
+  }
+}
+
+let jumbotronSlides = [];
+let jumbotronIndex = 0;
+let jumbotronTimer = null;
+
+function renderJumbotron(){
+  const el = document.getElementById("jumbotron");
+  jumbotronSlides = ALL_PRODUCTS
+    .filter(p => p.images && p.images.length > 0)
+    .map(p => ({ src: p.images[0], id: p.id }));
+
+  if(jumbotronSlides.length === 0){ el.style.display = "none"; return; }
+
+  el.style.display = "block";
+  el.innerHTML = `<img id="jumbotronImg" src="${jumbotronSlides[0].src}" alt="">`;
+  document.getElementById("jumbotronImg").onclick = ()=> goToJumbotronProduct();
+
+  jumbotronIndex = 0;
+  if(jumbotronTimer) clearInterval(jumbotronTimer);
+  if(jumbotronSlides.length > 1){
+    jumbotronTimer = setInterval(()=>{
+      jumbotronIndex = (jumbotronIndex + 1) % jumbotronSlides.length;
+      const img = document.getElementById("jumbotronImg");
+      if(img) img.src = jumbotronSlides[jumbotronIndex].src;
+    }, 5000);
+  }
+}
+
+function goToJumbotronProduct(){
+  const slide = jumbotronSlides[jumbotronIndex];
+  if(!slide) return;
+  const p = ALL_PRODUCTS.find(x=>x.id===slide.id);
+  if(p) openModal(p);
+}
+
+function renderTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const btn = document.createElement("button");
+    btn.className = "tab" + (cat === ACTIVE_CATEGORY ? " active" : "");
+    btn.textContent = cat;
+    btn.onclick = ()=>{ ACTIVE_CATEGORY = cat; renderTabs(); renderGrid(); };
+    tabs.appendChild(btn);
+  });
+}
+
+function renderGrid(){
+  const grid = document.getElementById("grid");
+  let list = ACTIVE_CATEGORY === "All" ? ALL_PRODUCTS : ALL_PRODUCTS.filter(p=>p.category===ACTIVE_CATEGORY);
+  if(SEARCH_QUERY){
+    list = list.filter(p => (p.name||"").toLowerCase().includes(SEARCH_QUERY));
+  }
+  if(list.length === 0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">No products match.</div>`;
+    return;
+  }
+  grid.innerHTML = "";
+  list.forEach(p=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img class="card-img" src="${(p.images&&p.images[0])||''}" alt="${p.name}">
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-price">${formatPrice(p.price)}</div>
+        <button class="see-more-btn">See more</button>
+      </div>`;
+    card.querySelector(".see-more-btn").onclick = ()=>openModal(p);
+    grid.appendChild(card);
+  });
+}
+
+function openModal(p){
+  document.getElementById("modalCat").textContent = p.category;
+  document.getElementById("modalName").textContent = p.name;
+  document.getElementById("modalPrice").textContent = formatPrice(p.price);
+
+  const subtopics = [];
+  if(p.features) subtopics.push(`<div class="subtopic"><h4>Product Features</h4><p>${p.features}</p></div>`);
+  if(p.usage) subtopics.push(`<div class="subtopic"><h4>Product Use</h4><p>${p.usage}</p></div>`);
+  document.getElementById("modalDesc").innerHTML = subtopics.join("");
+  document.getElementById("dimsRow").innerHTML = `
+    <div class="dim"><b>${p.length} cm</b>Length</div>
+    <div class="dim"><b>${p.breadth} cm</b>Breadth</div>
+    <div class="dim"><b>${p.height} cm</b>Height</div>`;
+
+  const social = [];
+  if(p.video) social.push(`<a class="social-link" href="${p.video}" target="_blank">▶ Video</a>`);
+  if(p.facebook) social.push(`<a class="social-link" href="${p.facebook}" target="_blank">Facebook</a>`);
+  if(p.instagram) social.push(`<a class="social-link" href="${p.instagram}" target="_blank">Instagram</a>`);
+  if(p.tiktok) social.push(`<a class="social-link" href="${p.tiktok}" target="_blank">TikTok</a>`);
+  document.getElementById("socialRow").innerHTML = social.join("");
+  document.getElementById("socialNote").style.display = social.length > 0 ? "block" : "none";
+
+  const imgs = (p.images && p.images.length) ? p.images : [""];
+  document.getElementById("modalMainImg").src = imgs[0];
+  document.getElementById("thumbRow").innerHTML = imgs.map((img,i)=>
+    `<img class="thumb${i===0?' active':''}" src="${img}" onclick="setMainImg(this,'${img.replace(/'/g,"\\'")}')">`
+  ).join("");
+
+  document.getElementById("orderBtn").href = whatsappOrderLink(p.name);
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?p=${p.id}`;
+  document.getElementById("copyLinkBtn").onclick = ()=>{
+    navigator.clipboard.writeText(shareUrl).then(()=>{
+      const btn = document.getElementById("copyLinkBtn");
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(()=>{ btn.textContent = original; }, 1500);
+    });
+  };
+  window.history.replaceState(null, "", shareUrl);
+
+  document.getElementById("modalBackdrop").classList.add("open");
+}
+function toggleMenu(){
+  document.getElementById("drawerBackdrop").classList.toggle("open");
+}
+function closeMenuOnBackdrop(e){ if(e.target.id === "drawerBackdrop") toggleMenu(); }
+
+function setMainImg(el, src){
+  document.getElementById("modalMainImg").src = src;
+  document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
+  el.classList.add("active");
+}
+function closeModal(){
+  document.getElementById("modalBackdrop").classList.remove("open");
+  window.history.replaceState(null, "", window.location.pathname);
+}
+function closeModalOnBackdrop(e){ if(e.target.id === "modalBackdrop") closeModal(); }
+
+init();
+</script>
+</body>
+</html>

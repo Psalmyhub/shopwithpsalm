@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sample-1",
+    "name": "Sample Wrist Watch",
+    "category": "Wrist Watch",
+    "description": "This is a sample product. Open the Admin page to replace it with your real products, photos and links.",
+    "images": ["https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=800"],
+    "video": "",
+    "facebook": "",
+    "instagram": "",
+    "tiktok": "",
+    "length": "4",
+    "breadth": "4",
+    "height": "1.2"
+  }
+]
