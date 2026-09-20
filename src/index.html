@@ -26,6 +26,13 @@
 </div>
 
 <div class="wrap">
+  <div class="contact-strip" aria-label="Store contact information">
+    <span class="contact-item">📍 <strong>Location:</strong> Rivers State, Port Harcourt</span>
+    <span class="contact-divider" aria-hidden="true">|</span>
+    <a class="contact-item contact-link" href="tel:09038513088">📞 <strong>Call:</strong> 09038513088</a>
+    <a class="contact-item contact-link" href="https://wa.me/2349038513088" target="_blank" rel="noopener">💬 <strong>WhatsApp:</strong> 09038513088</a>
+  </div>
+
   <div class="jumbotron" id="jumbotron"></div>
 
   <div class="search-bar">
@@ -64,7 +71,11 @@
     <div class="modal">
       <div class="modal-top">
         <div class="modal-gallery">
-          <img class="modal-main-img" id="modalMainImg" src="" alt="">
+          <div class="modal-image-stage">
+            <button class="gallery-arrow gallery-prev" id="galleryPrev" aria-label="Previous product image">‹</button>
+            <img class="modal-main-img" id="modalMainImg" src="" alt="">
+            <button class="gallery-arrow gallery-next" id="galleryNext" aria-label="Next product image">›</button>
+          </div>
           <div class="thumb-row" id="thumbRow"></div>
         </div>
         <div class="modal-info">
@@ -147,7 +158,7 @@ function renderJumbotron(){
       jumbotronIndex = (jumbotronIndex + 1) % jumbotronSlides.length;
       const img = document.getElementById("jumbotronImg");
       if(img) img.src = jumbotronSlides[jumbotronIndex].src;
-    }, 5000);
+    }, 2000);
   }
 }
 
@@ -192,6 +203,7 @@ function renderGrid(){
         <button class="see-more-btn">See more</button>
       </div>`;
     card.querySelector(".see-more-btn").onclick = ()=>openModal(p);
+    card.querySelector(".card-img").onclick = ()=>openModal(p);
     grid.appendChild(card);
   });
 }
@@ -219,6 +231,11 @@ function openModal(p){
   document.getElementById("socialNote").style.display = social.length > 0 ? "block" : "none";
 
   const imgs = (p.images && p.images.length) ? p.images : [""];
+  window.currentModalImages = imgs;
+  window.currentModalImageIndex = 0;
+  const hasMultipleImages = imgs.length > 1;
+  document.getElementById("galleryPrev").style.display = hasMultipleImages ? "flex" : "none";
+  document.getElementById("galleryNext").style.display = hasMultipleImages ? "flex" : "none";
   document.getElementById("modalMainImg").src = imgs[0];
   document.getElementById("thumbRow").innerHTML = imgs.map((img,i)=>
     `<img class="thumb${i===0?' active':''}" src="${img}" onclick="setMainImg(this,'${img.replace(/'/g,"\\'")}')">`
@@ -246,14 +263,41 @@ function closeMenuOnBackdrop(e){ if(e.target.id === "drawerBackdrop") toggleMenu
 
 function setMainImg(el, src){
   document.getElementById("modalMainImg").src = src;
+  window.currentModalImageIndex = Math.max(0, (window.currentModalImages || []).indexOf(src));
   document.querySelectorAll(".thumb").forEach(t=>t.classList.remove("active"));
   el.classList.add("active");
+}
+
+function showModalImage(direction){
+  const imgs = window.currentModalImages || [];
+  if(imgs.length < 2) return;
+  window.currentModalImageIndex = (window.currentModalImageIndex + direction + imgs.length) % imgs.length;
+  const src = imgs[window.currentModalImageIndex];
+  document.getElementById("modalMainImg").src = src;
+  document.querySelectorAll(".thumb").forEach((t,i)=>t.classList.toggle("active", i === window.currentModalImageIndex));
+}
+
+function handleGallerySwipe(startX, endX){
+  const delta = endX - startX;
+  if(Math.abs(delta) < 40) return;
+  showModalImage(delta < 0 ? 1 : -1);
 }
 function closeModal(){
   document.getElementById("modalBackdrop").classList.remove("open");
   window.history.replaceState(null, "", window.location.pathname);
 }
 function closeModalOnBackdrop(e){ if(e.target.id === "modalBackdrop") closeModal(); }
+
+const modalMainImg = document.getElementById("modalMainImg");
+let galleryTouchStartX = 0;
+modalMainImg.addEventListener("touchstart", e => {
+  galleryTouchStartX = e.changedTouches[0].clientX;
+}, {passive:true});
+modalMainImg.addEventListener("touchend", e => {
+  handleGallerySwipe(galleryTouchStartX, e.changedTouches[0].clientX);
+}, {passive:true});
+document.getElementById("galleryPrev").onclick = ()=>showModalImage(-1);
+document.getElementById("galleryNext").onclick = ()=>showModalImage(1);
 
 init();
 </script>
