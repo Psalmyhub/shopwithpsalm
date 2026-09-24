@@ -99,6 +99,13 @@ a{color:inherit;}
 .contact-link{text-decoration:none;}
 .contact-link:hover{color:var(--orange);}
 .contact-divider{color:var(--border);}
+.cart-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:18px 0 0;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;color:var(--text-dim);}
+.cart-order-btn,.cart-clear-btn,.add-cart-btn{border:1px solid var(--orange);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;background:var(--surface);color:var(--text);}
+.cart-order-btn{background:var(--orange);color:var(--white);}
+.cart-clear-btn{display:none;}
+.cart-bar.has-items .cart-clear-btn{display:inline-block;}
+.add-cart-btn{width:100%;margin-top:10px;}
+.add-cart-btn:hover,.cart-clear-btn:hover{background:var(--orange);color:var(--white);}
 
 /* Jumbotron - auto-advancing slideshow, one photo per product */
 .jumbotron{
@@ -233,10 +240,7 @@ a{color:inherit;}
 }
 .thumb.active{border-color:var(--orange);}
 .thumb:hover{border-color:var(--orange);}
-.gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:40px;height:40px;border-radius:999px;border:1px solid var(--orange);background:rgba(255,255,255,.9);color:var(--black);font-size:32px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
-.gallery-arrow:hover{background:var(--orange);color:var(--white);}
-.gallery-prev{left:12px}.gallery-next{right:12px}
-[data-theme="dark"] .gallery-arrow{background:rgba(30,26,22,.92);color:var(--text);}
+.gallery-arrow{display:none!important;}
 .modal-info{padding:28px;}
 .modal-cat{color:var(--orange);font-weight:700;font-size:12px;margin-bottom:6px;}
 .modal-name{font-family:'Archivo Black',sans-serif;font-size:24px;margin:0 0 10px;}
