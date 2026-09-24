@@ -26,6 +26,8 @@
 </div>
 
 <div class="wrap">
+  <div class="cart-bar" id="cartBar"><span><strong id="cartCount">0</strong> item(s) selected · <strong id="cartTotal">₦0</strong></span><button class="cart-order-btn" id="cartOrderBtn">Order selected items</button><button class="cart-clear-btn" id="cartClearBtn">Clear</button></div>
+
   <div class="contact-strip" aria-label="Store contact information">
     <span class="contact-item">📍 <strong>Location:</strong> Rivers State, Port Harcourt</span>
     <span class="contact-divider" aria-hidden="true">|</span>
@@ -87,6 +89,7 @@
           <p class="social-note" id="socialNote" style="display:none;">See product video on our social media platforms</p>
           <div class="social-row" id="socialRow"></div>
           <a class="order-btn" id="orderBtn" href="#" target="_blank">Order on WhatsApp</a>
+          <button class="add-cart-btn" id="addCartBtn" type="button">＋ Add to order</button>
           <button class="social-link" id="copyLinkBtn" style="margin-top:10px;width:100%;justify-content:center;">🔗 Copy link to this item</button>
         </div>
       </div>
@@ -99,7 +102,8 @@
 let ALL_PRODUCTS = [];
 let ACTIVE_CATEGORY = "All";
 let SEARCH_QUERY = "";
-const CATEGORIES = ["All","Aesthetic Light","Wrist Watch","Wall Decor","Bags","Content Kits","Gaming Accessories","Home Decor","Others"];
+const CATEGORIES = ["All","Combo","Aesthetic Light","Wrist Watch","Wall Decor","Bags","Content Kits","Gaming Accessories","Home Decor","Others"];
+let ORDER_CART = [];
 
 function onSearchInput(e){
   SEARCH_QUERY = e.target.value.trim().toLowerCase();
@@ -241,7 +245,10 @@ function openModal(p){
     `<img class="thumb${i===0?' active':''}" src="${img}" onclick="setMainImg(this,'${img.replace(/'/g,"\\'")}')">`
   ).join("");
 
-  document.getElementById("orderBtn").href = whatsappOrderLink(p.name);
+  const itemLink = window.location.origin + window.location.pathname + "?p=" + p.id;
+  document.getElementById("orderBtn").href = whatsappOrderLink(p.name, p.price, itemLink);
+  document.getElementById("addCartBtn").textContent = ORDER_CART.some(x=>x.id===p.id) ? "✓ Added to order" : "＋ Add to order";
+  document.getElementById("addCartBtn").onclick = ()=>toggleCartProduct(p);
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?p=${p.id}`;
   document.getElementById("copyLinkBtn").onclick = ()=>{
@@ -298,6 +305,32 @@ modalMainImg.addEventListener("touchend", e => {
 }, {passive:true});
 document.getElementById("galleryPrev").onclick = ()=>showModalImage(-1);
 document.getElementById("galleryNext").onclick = ()=>showModalImage(1);
+
+function toggleCartProduct(p){
+  const i=ORDER_CART.findIndex(x=>x.id===p.id);
+  if(i>=0) ORDER_CART.splice(i,1); else ORDER_CART.push(p);
+  updateCartBar();
+  document.getElementById("addCartBtn").textContent=ORDER_CART.some(x=>x.id===p.id) ? "✓ Added to order" : "＋ Add to order";
+}
+function updateCartBar(){
+  const total=ORDER_CART.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+  document.getElementById("cartCount").textContent=ORDER_CART.length;
+  document.getElementById("cartTotal").textContent=formatPrice(total)||"₦0";
+  document.getElementById("cartBar").classList.toggle("has-items",ORDER_CART.length>0);
+}
+function orderCart(){
+  if(!ORDER_CART.length) return;
+  const lines=ORDER_CART.map((p,i)=>{
+    const link=window.location.origin+window.location.pathname+"?p="+p.id;
+    return (i+1)+". "+p.name+" — "+formatPrice(p.price)+"\n"+link;
+  });
+  const total=ORDER_CART.reduce((sum,p)=>sum+(Number(p.price)||0),0);
+  const msg="Hi! I'd like to order these items:\n\n"+lines.join("\n\n")+"\n\nTotal: "+formatPrice(total);
+  window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(msg),"_blank");
+}
+document.getElementById("cartOrderBtn").onclick=orderCart;
+document.getElementById("cartClearBtn").onclick=()=>{ORDER_CART=[];updateCartBar();};
+updateCartBar();
 
 init();
 </script>
