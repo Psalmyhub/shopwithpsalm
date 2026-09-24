@@ -25,9 +25,9 @@ function formatPrice(price){
   return "₦" + num.toLocaleString();
 }
 
-function whatsappOrderLink(productName){
-  const msg = `Hi! I'd like to order: ${productName}`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+function whatsappOrderLink(productName, price, itemLink){
+  const msg = "Hi! I'd like to order: " + productName + "\nPrice: " + formatPrice(price) + "\nItem link: " + itemLink;
+  return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(msg);
 }
 
 // The live catalog is served from /api/store (backed by Vercel Postgres),
